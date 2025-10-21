@@ -44,9 +44,11 @@ function frm_sim_is_divider($is_divider, $field) {
 add_filter('frm_field_div_classes', 'frm_sim_field_div_classes', 10, 2);
 function frm_sim_field_div_classes($classes, $field) {
     if ($field['type'] == 'canvas_background') {
-        $classes .= ' frm_section_heading';
+        // Treat as a section and add a unique marker class used by our JS
+        $classes .= ' frm_section_heading simulator-canvas-field';
     } elseif ($field['type'] == 'simulator_layer') {
-        $classes .= ' frm_none_container';
+        // Hide label container spacing and add a unique marker class
+        $classes .= ' frm_none_container simulator-layer-field';
     }
     return $classes;
 }
@@ -145,7 +147,7 @@ function frm_sim_show_admin_field($field) {
     if ($field['type'] == 'canvas_background') {
         ?>
         <h3 class="frm_pos_top frm_section_spacing"><?php echo esc_html($field['name']); ?></h3>
-        <ul class="frm_sortable_field_list frm_clearfix frm_no_section_fields" id="frm_field_list_<?php echo esc_attr($field['id']); ?>" style="margin: 10px 0; padding: 10px; border: 1px dashed #ccc; min-height: 50px;">
+        <ul class="frm_sortable_field_list frm_clearfix" id="frm_field_list_<?php echo esc_attr($field['id']); ?>" style="margin: 10px 0; padding: 10px; border: 1px dashed #ccc; min-height: 50px;">
             <div class="howto button-secondary frm_html_field" style="background: #f0f0f0; padding: 10px; border: 1px solid #ddd; text-align: center;">
                 <?php _e('Drag Simulator Layers or HTML fields here.', 'frm-sim'); ?>
             </div>
@@ -273,7 +275,7 @@ function frm_sim_display_merged($value, $field, $atts) {
 // Enqueue assets
 add_action('wp_enqueue_scripts', 'frm_sim_enqueue_frontend');
 function frm_sim_enqueue_frontend() {
-    if (!function_exists('FrmAppHelper')) {
+    if (!class_exists('FrmAppHelper')) {
         return;
     }
     wp_enqueue_script('frm-sim-js', FRM_SIM_URL . 'js/simulator.js', array('jquery'), '1.6', true);
