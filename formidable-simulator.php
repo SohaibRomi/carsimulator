@@ -31,10 +31,24 @@ function frm_sim_add_fields($fields) {
     return $fields;
 }
 
+// Helper to safely get a field "type" from array|object
+if (!function_exists('frm_sim_get_field_type')) {
+    function frm_sim_get_field_type($field) {
+        if (is_array($field)) {
+            return isset($field['type']) ? $field['type'] : '';
+        }
+        if (is_object($field)) {
+            return isset($field->type) ? $field->type : '';
+        }
+        return '';
+    }
+}
+
 // Treat canvas as divider for nesting
 add_filter('frm_is_field_divider', 'frm_sim_is_divider', 10, 2);
 function frm_sim_is_divider($is_divider, $field) {
-    if ($field['type'] == 'canvas_background') {
+    $type = frm_sim_get_field_type($field);
+    if ($type === 'canvas_background') {
         return true;
     }
     return $is_divider;
@@ -43,9 +57,12 @@ function frm_sim_is_divider($is_divider, $field) {
 // Add section class to canvas container
 add_filter('frm_field_div_classes', 'frm_sim_field_div_classes', 10, 2);
 function frm_sim_field_div_classes($classes, $field) {
-    if ($field['type'] == 'canvas_background') {
+    $type = frm_sim_get_field_type($field);
+    if ($type === 'canvas_background') {
+        // Mark as a Section heading so the builder treats it like a container
         $classes .= ' frm_section_heading';
-    } elseif ($field['type'] == 'simulator_layer') {
+    } elseif ($type === 'simulator_layer') {
+        // Layer has no inner container/label
         $classes .= ' frm_none_container';
     }
     return $classes;
@@ -54,7 +71,8 @@ function frm_sim_field_div_classes($classes, $field) {
 // Hide labels for layers
 add_filter('frm_get_label_position', 'frm_sim_label_position', 10, 3);
 function frm_sim_label_position($position, $field, $form) {
-    if ($field['type'] == 'simulator_layer') {
+    $type = frm_sim_get_field_type($field);
+    if ($type === 'simulator_layer') {
         return 'none';
     }
     return $position;
@@ -146,9 +164,9 @@ function frm_sim_show_admin_field($field) {
         ?>
         <h3 class="frm_pos_top frm_section_spacing"><?php echo esc_html($field['name']); ?></h3>
         <ul class="frm_sortable_field_list frm_clearfix frm_no_section_fields" id="frm_field_list_<?php echo esc_attr($field['id']); ?>" style="margin: 10px 0; padding: 10px; border: 1px dashed #ccc; min-height: 50px;">
-            <div class="howto button-secondary frm_html_field" style="background: #f0f0f0; padding: 10px; border: 1px solid #ddd; text-align: center;">
+            <li class="frm_no_fields_placeholder" style="background: #f0f0f0; padding: 10px; border: 1px solid #ddd; text-align: center; list-style: none;">
                 <?php _e('Drag Simulator Layers or HTML fields here.', 'frm-sim'); ?>
-            </div>
+            </li>
         </ul>
         <?php
     } elseif ($field['type'] == 'simulator_layer') {
@@ -273,7 +291,7 @@ function frm_sim_display_merged($value, $field, $atts) {
 // Enqueue assets
 add_action('wp_enqueue_scripts', 'frm_sim_enqueue_frontend');
 function frm_sim_enqueue_frontend() {
-    if (!function_exists('FrmAppHelper')) {
+    if (!class_exists('FrmAppHelper')) {
         return;
     }
     wp_enqueue_script('frm-sim-js', FRM_SIM_URL . 'js/simulator.js', array('jquery'), '1.6', true);
@@ -287,5 +305,4 @@ function frm_sim_enqueue_admin($hook) {
     }
     wp_enqueue_media();
     wp_enqueue_script('frm-sim-builder-js', FRM_SIM_URL . 'js/builder.js', array('jquery', 'jquery-ui-sortable'), '1.6', true);
-    wp_enqueue_script('frm-sim-admin-js', FRM_SIM_URL . 'js/admin.js', array('jquery'), '1.6', true);
 }
